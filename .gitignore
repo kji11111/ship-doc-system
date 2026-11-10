@@ -1,0 +1,13 @@
+# 依赖与构建产物
+node_modules
+dist
+
+# 日志与本地环境
+*.log
+*.local
+.DS_Store
+
+# 数据安全：不提交任何 Excel 单证/备份与全库 JSON 备份（可能含真实客户与账号信息）
+*.xlsx
+ship-doc-backup-*.json
+*.bak.json
