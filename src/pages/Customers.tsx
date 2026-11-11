@@ -5,6 +5,7 @@ import { PlusOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import type { Customer } from '../types';
 import { nextId, useStore } from '../store/AppStore';
+import { round2, unpaidOf } from '../utils/calc';
 
 interface CustomerFormValues {
   name: string;
@@ -17,8 +18,22 @@ interface CustomerFormValues {
 
 /** 客户档案：完整 CRUD（名称/联系人/电话/地址/结算方式/备注） */
 export default function Customers() {
-  const { customers, saveCustomer, removeCustomer } = useStore();
+  const { customers, saveCustomer, removeCustomer, packingLists, statements } = useStore();
   const { message } = AntApp.useApp();
+
+  /** 装箱单数 / 应收余额（按客户聚合，供列展示与排序） */
+  const packCount = useMemo(() => {
+    const m = new Map<string, number>();
+    packingLists.forEach((p) => {
+      if (p.customerId && p.status !== '已取消') m.set(p.customerId, (m.get(p.customerId) ?? 0) + 1);
+    });
+    return m;
+  }, [packingLists]);
+  const unpaidMap = useMemo(() => {
+    const m = new Map<string, number>();
+    statements.forEach((st) => m.set(st.customerId, round2((m.get(st.customerId) ?? 0) + unpaidOf(st))));
+    return m;
+  }, [statements]);
   const [kw, setKw] = useState('');
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Customer | null>(null);
@@ -65,12 +80,50 @@ export default function Customers() {
   };
 
   const columns: ColumnsType<Customer> = [
-    { title: '编号', dataIndex: 'id', width: 90 },
-    { title: '名称', dataIndex: 'name', width: 140, render: (v: string) => <b>{v}</b> },
-    { title: '联系人', dataIndex: 'contact', width: 110, render: (v?: string) => v || '—' },
-    { title: '电话', dataIndex: 'phone', width: 140, render: (v?: string) => v || '—' },
+    {
+      title: '编号',
+      dataIndex: 'id',
+      width: 90,
+      sorter: (a, b) => String(a.id ?? '').localeCompare(String(b.id ?? ''), 'zh-CN'),
+    },
+    {
+      title: '名称',
+      dataIndex: 'name',
+      width: 130,
+      render: (v: string) => <b>{v}</b>,
+      sorter: (a, b) => String(a.name ?? '').localeCompare(String(b.name ?? ''), 'zh-CN'),
+    },
+    {
+      title: '简称',
+      dataIndex: 'shortName',
+      width: 90,
+      render: (v?: string) => v || '—',
+      sorter: (a, b) => String(a.shortName ?? '').localeCompare(String(b.shortName ?? ''), 'zh-CN'),
+    },
+    {
+      title: '联系人',
+      dataIndex: 'contact',
+      width: 100,
+      render: (v?: string) => v || '—',
+      sorter: (a, b) => String(a.contact ?? '').localeCompare(String(b.contact ?? ''), 'zh-CN'),
+    },
+    { title: '电话', dataIndex: 'phone', width: 130, render: (v?: string) => v || '—' },
     { title: '地址', dataIndex: 'address', ellipsis: true, render: (v?: string) => v || '—' },
-    { title: '结算方式', dataIndex: 'paymentTerm', width: 110, render: (v?: string) => v || '—' },
+    { title: '结算方式', dataIndex: 'paymentTerm', width: 100, render: (v?: string) => v || '—' },
+    {
+      title: '装箱单数',
+      key: 'packCount',
+      width: 92,
+      render: (_, c) => <span className="tabular-nums">{packCount.get(c.id) ?? 0}</span>,
+      sorter: (a, b) => (packCount.get(a.id) ?? 0) - (packCount.get(b.id) ?? 0),
+    },
+    {
+      title: '应收余额',
+      key: 'unpaid',
+      width: 96,
+      render: (_, c) => <span className="tabular-nums">{unpaidMap.get(c.id) ?? 0}</span>,
+      sorter: (a, b) => (unpaidMap.get(a.id) ?? 0) - (unpaidMap.get(b.id) ?? 0),
+    },
     { title: '备注', dataIndex: 'remark', ellipsis: true, render: (v?: string) => v || '—' },
     {
       title: '操作',
@@ -102,7 +155,14 @@ export default function Customers() {
       <Space style={{ marginBottom: 12 }}>
         <Input.Search placeholder="搜名称 / 联系人 / 电话" allowClear value={kw} onChange={(e) => setKw(e.target.value)} style={{ width: 260 }} />
       </Space>
-      <Table size="small" rowKey="id" columns={columns} dataSource={list} pagination={{ pageSize: 10, showTotal: (t) => '共 ' + t + ' 家' }} />
+      <Table
+        size="small"
+        rowKey="id"
+        columns={columns}
+        dataSource={list}
+        scroll={{ x: 'max-content' }}
+        pagination={{ pageSize: 10, showTotal: (t) => '共 ' + t + ' 家' }}
+      />
       <Modal
         title={editing ? '编辑客户 · ' + editing.id : '新增客户'}
         open={open}

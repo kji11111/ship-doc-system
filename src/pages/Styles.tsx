@@ -82,8 +82,19 @@ export default function Styles() {
 
   const columns: ColumnsType<Style> = [
     { title: '编号', dataIndex: 'id', width: 90 },
-    { title: '款号', dataIndex: 'styleNo', width: 100, render: (v: string) => <b>{v}</b> },
-    { title: '品名', dataIndex: 'name', width: 120 },
+    {
+      title: '款号',
+      dataIndex: 'styleNo',
+      width: 100,
+      render: (v: string) => <b>{v}</b>,
+      sorter: (a, b) => String(a.styleNo ?? '').localeCompare(String(b.styleNo ?? ''), 'zh-CN'),
+    },
+    {
+      title: '品名',
+      dataIndex: 'name',
+      width: 120,
+      sorter: (a, b) => String(a.name ?? '').localeCompare(String(b.name ?? ''), 'zh-CN'),
+    },
     {
       title: '尺码列',
       dataIndex: 'sizeScale',
@@ -96,8 +107,19 @@ export default function Styles() {
       width: 220,
       render: (v: string[]) => (v.length ? v.map((c) => <Tag key={c} color="green">{c}</Tag>) : '—'),
     },
-    { title: '单位', dataIndex: 'unit', width: 70 },
-    { title: '大货单价', dataIndex: 'bulkPrice', width: 100, render: (v?: number) => (v != null ? '¥' + v : '—') },
+    {
+      title: '单位',
+      dataIndex: 'unit',
+      width: 70,
+      sorter: (a, b) => String(a.unit ?? '').localeCompare(String(b.unit ?? ''), 'zh-CN'),
+    },
+    {
+      title: '大货单价',
+      dataIndex: 'bulkPrice',
+      width: 100,
+      render: (v?: number) => (v != null ? '¥' + v : '—'),
+      sorter: (a, b) => Number(a.bulkPrice ?? 0) - Number(b.bulkPrice ?? 0),
+    },
     { title: '工艺', dataIndex: 'process', width: 110, ellipsis: true, render: (v?: string) => v || '—' },
     { title: '备注', dataIndex: 'remark', ellipsis: true, render: (v?: string) => v || '—' },
     {

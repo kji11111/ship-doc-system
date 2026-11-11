@@ -84,15 +84,66 @@ export default function PackingLists() {
   const printCust = printPl ? custName.get(printPl.customerId ?? '') : undefined;
 
   const columns: ColumnsType<PackingList> = [
-    { title: '编号', dataIndex: 'id', width: 110 },
-    { title: '日期', dataIndex: 'date', width: 100 },
-    { title: '品名', dataIndex: 'productName', width: 110 },
-    { title: '款号', dataIndex: 'styleNo', width: 90, render: (v: string) => <b>{v}</b> },
-    { title: '客户', dataIndex: 'customerId', width: 100, render: (v?: string) => (v ? custName.get(v) ?? v : '—') },
+    {
+      title: '编号',
+      dataIndex: 'id',
+      width: 110,
+      sorter: (a, b) => String(a.id ?? '').localeCompare(String(b.id ?? ''), 'zh-CN'),
+    },
+    {
+      title: '日期',
+      dataIndex: 'date',
+      width: 100,
+      defaultSortOrder: 'descend',
+      sorter: (a, b) => dayjs(a.date).valueOf() - dayjs(b.date).valueOf(),
+    },
+    {
+      title: '品名',
+      dataIndex: 'productName',
+      width: 110,
+      sorter: (a, b) => String(a.productName ?? '').localeCompare(String(b.productName ?? ''), 'zh-CN'),
+    },
+    {
+      title: '款号',
+      dataIndex: 'styleNo',
+      width: 90,
+      render: (v: string) => <b>{v}</b>,
+      sorter: (a, b) => String(a.styleNo ?? '').localeCompare(String(b.styleNo ?? ''), 'zh-CN'),
+    },
+    {
+      title: '客户',
+      dataIndex: 'customerId',
+      width: 100,
+      render: (v?: string) => (v ? custName.get(v) ?? v : '—'),
+      sorter: (a, b) => {
+        const an = (a.customerId ? custName.get(a.customerId) : undefined) ?? '';
+        const bn = (b.customerId ? custName.get(b.customerId) : undefined) ?? '';
+        if (!an && !bn) return 0;
+        if (!an) return 1; // 未关联客户的排后面
+        if (!bn) return -1;
+        return an.localeCompare(bn, 'zh-CN');
+      },
+    },
     { title: '客户单号', dataIndex: 'orderNo', width: 130, render: (v?: string) => v || '—' },
-    { title: '箱数', width: 70, render: (_, p) => <span className="tabular-nums">{cartonCount(p)}</span> },
-    { title: '总件数', width: 84, render: (_, p) => <b className="tabular-nums">{packingGrandQty(p)}</b> },
-    { title: '状态', dataIndex: 'status', width: 84, render: (s: PackingStatus) => <Tag color={STATUS_TAG[s]}>{s}</Tag> },
+    {
+      title: '箱数',
+      width: 70,
+      render: (_, p) => <span className="tabular-nums">{cartonCount(p)}</span>,
+      sorter: (a, b) => cartonCount(a) - cartonCount(b),
+    },
+    {
+      title: '总件数',
+      width: 84,
+      render: (_, p) => <b className="tabular-nums">{packingGrandQty(p)}</b>,
+      sorter: (a, b) => packingGrandQty(a) - packingGrandQty(b),
+    },
+    {
+      title: '状态',
+      dataIndex: 'status',
+      width: 84,
+      render: (s: PackingStatus) => <Tag color={STATUS_TAG[s]}>{s}</Tag>,
+      sorter: (a, b) => String(a.status ?? '').localeCompare(String(b.status ?? ''), 'zh-CN'),
+    },
     {
       title: '操作',
       width: 320,

@@ -71,11 +71,45 @@ export default function Statements() {
   const printCust = printSt ? custName.get(printSt.customerId) : undefined;
 
   const columns: ColumnsType<Statement> = [
-    { title: '编号', dataIndex: 'id', width: 116 },
-    { title: '对账期间', dataIndex: 'period', width: 100 },
-    { title: '标题', dataIndex: 'title', ellipsis: true, render: (v?: string) => v || '—' },
-    { title: '客户', dataIndex: 'customerId', width: 100, render: (v: string) => custName.get(v) ?? v },
-    { title: '金额（元）', width: 100, render: (_, st) => <b className="tabular-nums">{statementAmount(st.lines)}</b> },
+    {
+      title: '编号',
+      dataIndex: 'id',
+      width: 116,
+      sorter: (a, b) => String(a.id ?? '').localeCompare(String(b.id ?? ''), 'zh-CN'),
+    },
+    {
+      title: '对账期间',
+      dataIndex: 'period',
+      width: 100,
+      sorter: (a, b) => String(a.period ?? '').localeCompare(String(b.period ?? ''), 'zh-CN'),
+    },
+    {
+      title: '标题',
+      dataIndex: 'title',
+      ellipsis: true,
+      render: (v?: string) => v || '—',
+      sorter: (a, b) => String(a.title ?? '').localeCompare(String(b.title ?? ''), 'zh-CN'),
+    },
+    {
+      title: '客户',
+      dataIndex: 'customerId',
+      width: 100,
+      render: (v: string) => custName.get(v) ?? v,
+      sorter: (a, b) => {
+        const an = custName.get(a.customerId) ?? '';
+        const bn = custName.get(b.customerId) ?? '';
+        if (!an && !bn) return 0;
+        if (!an) return 1;
+        if (!bn) return -1;
+        return an.localeCompare(bn, 'zh-CN');
+      },
+    },
+    {
+      title: '金额（元）',
+      width: 100,
+      render: (_, st) => <b className="tabular-nums">{statementAmount(st.lines)}</b>,
+      sorter: (a, b) => statementAmount(a.lines) - statementAmount(b.lines),
+    },
     { title: '已收', width: 88, render: (_, st) => <span className="tabular-nums">{statementPaid(st)}</span> },
     {
       title: '未收',
@@ -84,12 +118,28 @@ export default function Statements() {
         const due = unpaidOf(st);
         return <span className="tabular-nums" style={{ color: due > 0.005 ? '#c95656' : undefined }}>{due}</span>;
       },
+      sorter: (a, b) => unpaidOf(a) - unpaidOf(b),
     },
     {
       title: '状态',
       dataIndex: 'status',
       width: 90,
       render: (s: Statement['status']) => <Tag color={s === '已确认' ? 'green' : 'gold'}>{s}</Tag>,
+      sorter: (a, b) => String(a.status ?? '').localeCompare(String(b.status ?? ''), 'zh-CN'),
+    },
+    {
+      title: '确认时间',
+      dataIndex: 'confirmedAt',
+      width: 150,
+      render: (v?: string) => v || '—',
+      sorter: (a, b) => {
+        const x = String(a.confirmedAt ?? '');
+        const y = String(b.confirmedAt ?? '');
+        if (!x && !y) return 0;
+        if (!x) return 1; // 未确认的（空）排后面
+        if (!y) return -1;
+        return x.localeCompare(y);
+      },
     },
     {
       title: '操作',
